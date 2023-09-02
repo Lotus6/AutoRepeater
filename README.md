@@ -3,23 +3,29 @@
 * (如果感觉对您有帮助，感觉不错的话，请您给个大大的 ⭐️❗️)
 * 捡到洞欢迎分享喜悦❗️
 
+
+
 **V1.0**
 
 1. 效果图
 
-![iShot_2023-09-02_17.03.04](/Users/test/Desktop/iShot_2023-09-02_17.03.04.jpg)
+![iShot_2023-09-02_17 03 04](https://github.com/Lotus6/AutoRepeater/assets/63742814/6a806fe8-2c8f-4233-a60e-9d9909e66425)
+
 
 2. Config配置
 
 * 开启插件的同时，选择开启SSRF，Redirect，Sqli模块的按钮，dnslog token等
 
-![iShot_2023-09-02_17.16.55](/Users/test/Desktop/iShot_2023-09-02_17.16.55.jpg)
+![iShot_2023-09-02_17 16 55](https://github.com/Lotus6/AutoRepeater/assets/63742814/e17785e0-6d40-4bac-a62c-f1d70d1a5e50)
+
 
 * 在Replacements中，可自定义选择匹配的参数，也就是这个漏洞常见的参数点，我也内置了些，自己选择添加删除
+![iShot_2023-09-02_17 21 51](https://github.com/Lotus6/AutoRepeater/assets/63742814/af092b05-bfc8-4389-9e3e-a57c850acab4)
 
-![iShot_2023-09-02_17.21.51](/Users/test/Desktop/iShot_2023-09-02_17.21.51.jpg)
 
 
+
+##
 
 **原工具地址**
 
@@ -28,6 +34,8 @@ https://github.com/nccgroup/AutoRepeater
 * 修复了，原工具issue中，一直在问的json匹配不到问题
 
 
+
+##
 
 **免责声明**
 
