@@ -59,8 +59,6 @@ public class Replacement {
             "Replace All"
     };
 
-    String config = BurpExtender.getCallbacks().loadExtensionSetting("AutoRepeater");
-
     private enum MatchAndReplaceType {
         MATCH_NAME_REPLACE_NAME,
         MATCH_NAME_REPLACE_VALUE,
@@ -125,7 +123,7 @@ public class Replacement {
     private byte[] updateBurpParam(
             byte[] request,
             int parameterType,
-            MatchAndReplaceType matchAndReplaceType) {
+            MatchAndReplaceType matchAndReplaceType, String flag) {
         IExtensionHelpers helpers = BurpExtender.getHelpers();
         IRequestInfo analyzedRequest = helpers.analyzeRequest(request);
         // Need to only use params that can be added or removed.
@@ -204,16 +202,11 @@ public class Replacement {
                     case MATCH_NAME_REPLACE_DNSLOG:
                         if ((this.isRegexMatch && currentParameter.getName().matches(this.match))
                                 || currentParameter.getName().equals(this.match)) {
-                            JSONArray jsonArray = new JSONArray(config);
-                            JSONObject jsonObject = jsonArray.getJSONObject(0);
-                            JSONArray ssrfConfigArray = jsonObject.getJSONArray("ssrfConfig");
-                            JSONObject ssrfConfig = ssrfConfigArray.getJSONObject(0);
-                            String ceyeDnsLog = ssrfConfig.getString("ceyeDnsLog");
 
                             String host = analyzedRequest.getHeaders().get(1);
                             String subhost = extractIPorDomain(host);
 
-                            String replace = subhost + "." + ceyeDnsLog;
+                            String replace = "http://"+subhost + "." + flag;
 
                             parameters.set(i, helpers.buildParameter(
                                     currentParameter.getName(),
@@ -225,15 +218,7 @@ public class Replacement {
                     case MATCH_NAME_REPLACE_REDIRECT:
                         if ((this.isRegexMatch && currentParameter.getName().matches(this.match))
                                 || currentParameter.getName().equals(this.match)) {
-
-                            JSONArray jsonArray = new JSONArray(config);
-                            JSONObject jsonObject = jsonArray.getJSONObject(0);
-                            JSONArray redirectConfigArray = jsonObject.getJSONArray("redirectConfig");
-                            JSONObject redirectConfig = redirectConfigArray.getJSONObject(0);
-
-                            String redirectDomain = redirectConfig.getString("redirectDomain");
-                            String replace = redirectDomain;
-
+                            String replace = flag;
                             parameters.set(i, helpers.buildParameter(
                                     currentParameter.getName(),
                                     replace,
@@ -244,7 +229,7 @@ public class Replacement {
                     case MATCH_NAME_REPLACE_SQLI:
                         if ((this.isRegexMatch && currentParameter.getName().matches(this.match))
                                 || currentParameter.getName().equals(this.match)) {
-                            String replace = parameters.get(i).getValue() + "'";
+                            String replace = parameters.get(i).getValue() + flag;
                             parameters.set(i, helpers.buildParameter(
                                     currentParameter.getName(),
                                     replace,
@@ -451,32 +436,23 @@ public class Replacement {
     }
 
     // byte[] request = messageInfo.getRequest();
-    private byte[] matchJsonKeyUpdateValue(byte[] request, MatchAndReplaceType matchAndReplaceType) {
+    private byte[] matchJsonKeyUpdateValue(byte[] request, MatchAndReplaceType matchAndReplaceType, String flag) {
         IExtensionHelpers helpers = BurpExtender.getHelpers();
         IRequestInfo analyzedRequest = helpers.analyzeRequest(request);
 
         String replace = this.replace;
 
-        JSONArray jsonArray = new JSONArray(config);
-        JSONObject configJsonObject = jsonArray.getJSONObject(0);
-
         switch (matchAndReplaceType) {
             case MATCH_NAME_REPLACE_DNSLOG:
-                JSONArray ssrfConfigArray = configJsonObject.getJSONArray("ssrfConfig");
-                JSONObject ssrfConfig = ssrfConfigArray.getJSONObject(0);
-                String ceyeDnsLog = ssrfConfig.getString("ceyeDnsLog");
-
                 String host = analyzedRequest.getHeaders().get(1);
                 String subhost = extractIPorDomain(host);
-                replace = subhost + "." + ceyeDnsLog;
+                replace = "http://"+subhost + "." + flag;
                 break;
             case MATCH_NAME_REPLACE_REDIRECT:
-                JSONArray redirectConfigArray = configJsonObject.getJSONArray("redirectConfig");
-                JSONObject redirectConfig = redirectConfigArray.getJSONObject(0);
-                replace = redirectConfig.getString("redirectDomain");
+                replace = flag;
                 break;
             case MATCH_NAME_REPLACE_SQLI:
-                replace = "'";
+                replace = flag;
                 break;
 
         }
@@ -546,124 +522,124 @@ public class Replacement {
         }
     }
 
-    private byte[] updateRequestParamName(byte[] request) {
+    private byte[] updateRequestParamName(byte[] request,String flag) {
         if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_NAME);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_NAME,flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_NAME);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_NAME,flag);
         } else {
             return request;
         }
     }
 
-    private byte[] updateRequestParamValue(byte[] request) {
+    private byte[] updateRequestParamValue(byte[] request,String flag) {
         if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_VALUE_REPLACE_VALUE);
+                    MatchAndReplaceType.MATCH_VALUE_REPLACE_VALUE,flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_VALUE_REPLACE_VALUE);
+                    MatchAndReplaceType.MATCH_VALUE_REPLACE_VALUE,flag);
         } else {
             return request;
         }
     }
 
-    private byte[] updateRequestParamValueByName(byte[] request) {
+    private byte[] updateRequestParamValueByName(byte[] request,String flag) {
         if (Utils.isRequestMultipartJson(request)) {
-            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_JSON);
+            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_JSON,flag);
             return request;
         } else if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_VALUE);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_VALUE,flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_VALUE);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_VALUE,flag);
         } else {
             return request;
         }
     }
 
-    private byte[] updateRequestParamDnslogByName(byte[] request) {
+    private byte[] updateRequestParamDnslogByName(byte[] request, String flag) {
         if (Utils.isRequestMultipartJson(request)) {
-            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_DNSLOG);
+            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_DNSLOG, flag);
             return request;
         } else if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_DNSLOG);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_DNSLOG, flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_DNSLOG);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_DNSLOG, flag);
         } else {
             return request;
         }
     }
 
-    private byte[] updateRequestParamRedirectByName(byte[] request) {
+    private byte[] updateRequestParamRedirectByName(byte[] request, String flag) {
         if (Utils.isRequestMultipartJson(request)) {
-            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_REDIRECT);
+            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_REDIRECT, flag);
             return request;
         } else if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_REDIRECT);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_REDIRECT, flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_REDIRECT);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_REDIRECT, flag);
         } else {
             return request;
         }
     }
 
-    private byte[] updateRequestParamSqliByName(byte[] request) {
+    private byte[] updateRequestParamSqliByName(byte[] request, String flag) {
         if (Utils.isRequestMultipartJson(request)) {
-            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_SQLI);
+            request = matchJsonKeyUpdateValue(request, MatchAndReplaceType.MATCH_NAME_REPLACE_SQLI, flag);
             return request;
         } else if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_SQLI);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_SQLI, flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_NAME_REPLACE_SQLI);
+                    MatchAndReplaceType.MATCH_NAME_REPLACE_SQLI, flag);
         } else {
             return request;
         }
     }
 
-    private byte[] updateCookieName(byte[] request) {
+    private byte[] updateCookieName(byte[] request,String flag) {
         return updateBurpParam(request, IParameter.PARAM_COOKIE,
-                MatchAndReplaceType.MATCH_NAME_REPLACE_NAME);
+                MatchAndReplaceType.MATCH_NAME_REPLACE_NAME,flag);
     }
 
-    private byte[] updateCookieValue(byte[] request) {
+    private byte[] updateCookieValue(byte[] request,String flag) {
         return updateBurpParam(request, IParameter.PARAM_COOKIE,
-                MatchAndReplaceType.MATCH_VALUE_REPLACE_VALUE);
+                MatchAndReplaceType.MATCH_VALUE_REPLACE_VALUE,flag);
     }
 
-    private byte[] removeParameterByName(byte[] request) {
+    private byte[] removeParameterByName(byte[] request,String flag) {
         if (!Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_NAME_REMOVE);
+                    MatchAndReplaceType.MATCH_NAME_REMOVE,flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_NAME_REMOVE);
+                    MatchAndReplaceType.MATCH_NAME_REMOVE,flag);
         } else {
             return request;
         }
     }
 
-    private byte[] removeParameterByValue(byte[] request) {
+    private byte[] removeParameterByValue(byte[] request,String flag) {
         if (Utils.isRequestMultipartForm(request)) {
             request = updateBurpParam(request, IParameter.PARAM_BODY,
-                    MatchAndReplaceType.MATCH_VALUE_REMOVE);
+                    MatchAndReplaceType.MATCH_VALUE_REMOVE,flag);
             return updateBurpParam(request, IParameter.PARAM_URL,
-                    MatchAndReplaceType.MATCH_VALUE_REMOVE);
+                    MatchAndReplaceType.MATCH_VALUE_REMOVE,flag);
         } else {
             return request;
         }
     }
 
-    private byte[] removeCookieByName(byte[] request) {
+    private byte[] removeCookieByName(byte[] request,String flag) {
         return updateBurpParam(request, IParameter.PARAM_COOKIE,
-                MatchAndReplaceType.MATCH_NAME_REMOVE);
+                MatchAndReplaceType.MATCH_NAME_REMOVE,flag);
     }
 
-    private byte[] removeCookieByValue(byte[] request) {
+    private byte[] removeCookieByValue(byte[] request,String flag) {
         return updateBurpParam(request, IParameter.PARAM_COOKIE,
-                MatchAndReplaceType.MATCH_VALUE_REMOVE);
+                MatchAndReplaceType.MATCH_VALUE_REMOVE,flag);
     }
 
     private byte[] removeHeaderByName(byte[] request) {
@@ -726,9 +702,9 @@ public class Replacement {
         return helpers.buildHttpMessage(headers, body);
     }
 
-    private byte[] updateCookieValueByName(byte[] request) {
+    private byte[] updateCookieValueByName(byte[] request,String flag) {
         return updateBurpParam(request, IParameter.PARAM_COOKIE,
-                MatchAndReplaceType.MATCH_NAME_REPLACE_VALUE);
+                MatchAndReplaceType.MATCH_NAME_REPLACE_VALUE,flag);
     }
 
     private byte[] updateRequestFirstLine(byte[] request) {
@@ -746,7 +722,7 @@ public class Replacement {
     }
 
     // TODO: Modify this to return List<Byte[]> to support "Replace Each"
-    public byte[] performReplacement(IHttpRequestResponse messageInfo) {
+    public byte[] performReplacement(IHttpRequestResponse messageInfo, String flag) {
         byte[] request = messageInfo.getRequest();
         if (this.isEnabled) {
             switch (this.type) {
@@ -755,13 +731,13 @@ public class Replacement {
                 case ("Request Body"):
                     return updateRequestBody(request);
                 case ("Request Param Name"):
-                    return updateRequestParamName(request);
+                    return updateRequestParamName(request,flag);
                 case ("Request Param Value"):
-                    return updateRequestParamValue(request);
+                    return updateRequestParamValue(request,flag);
                 case ("Request Cookie Name"):
-                    return updateCookieName(request);
+                    return updateCookieName(request,flag);
                 case ("Request Cookie Value"):
-                    return updateCookieValue(request);
+                    return updateCookieValue(request,flag);
                 case ("Request First Line"):
                     return updateRequestFirstLine(request);
                 case ("Request String"):
@@ -769,29 +745,29 @@ public class Replacement {
                 case ("Add Header"):
                     return addHeader(request);
                 case ("Remove Parameter By Name"):
-                    return removeParameterByName(request);
+                    return removeParameterByName(request,flag);
                 case ("Remove Parameter By Value"):
-                    return removeParameterByValue(request);
+                    return removeParameterByValue(request,flag);
                 case ("Remove Cookie By Name"):
-                    return removeCookieByName(request);
+                    return removeCookieByName(request,flag);
                 case ("Remove Cookie By Value"):
-                    return removeCookieByValue(request);
+                    return removeCookieByValue(request,flag);
                 case ("Remove Header By Name"):
                     return removeHeaderByName(request);
                 case ("Remove Header By Value"):
                     return removeHeaderByValue(request);
                 case ("Match Param Name, Replace Value"):
-                    return updateRequestParamValueByName(request);
+                    return updateRequestParamValueByName(request,flag);
                 case ("Match Cookie Name, Replace Value"):
-                    return updateCookieValueByName(request);
+                    return updateCookieValueByName(request,flag);
                 case ("Match Header Name, Replace Value"):
                     return matchHeaderNameUpdateValue(request);
                 case ("Match Param Name, Replace Dnslog"):
-                    return updateRequestParamDnslogByName(request);
+                    return updateRequestParamDnslogByName(request, flag);
                 case ("Match Param Name, Replace Redirect"):
-                    return updateRequestParamRedirectByName(request);
+                    return updateRequestParamRedirectByName(request, flag);
                 case ("Match Param Name, Replace Sqli"):
-                    return updateRequestParamSqliByName(request);
+                    return updateRequestParamSqliByName(request, flag);
 
                 //  case ("Match Json Key, Replace Value"):
 //                    return matchJsonKeyUpdateValue(request);

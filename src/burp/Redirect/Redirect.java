@@ -15,8 +15,8 @@ public class Redirect {
     private RedirectSettingsModel redirectModel;
     private JToggleButton activatedButton;
 
-    public Redirect() {
-        redirectModel = new RedirectSettingsModel("null", false);
+    public Redirect(String redirectDomain,boolean activated) {
+        redirectModel = new RedirectSettingsModel(redirectDomain,activated);
         createUI();
     }
 

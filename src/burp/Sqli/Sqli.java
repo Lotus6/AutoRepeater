@@ -11,8 +11,8 @@ public class Sqli {
     private SqliSettingsModel sqliModel;
     private JToggleButton activatedButton;
 
-    public Sqli() {
-        sqliModel = new SqliSettingsModel(false);
+    public Sqli(boolean activated) {
+        sqliModel = new SqliSettingsModel(activated);
         createUI();
     }
 

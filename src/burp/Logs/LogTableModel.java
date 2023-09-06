@@ -96,7 +96,7 @@ public class LogTableModel extends AbstractTableModel {
             case 7:
                 return "Len. Diff.";
             case 8:
-                return "Bug. Type";
+                return "Bug. Type.";
             default:
                 return "";
         }

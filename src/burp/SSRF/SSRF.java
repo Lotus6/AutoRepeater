@@ -15,8 +15,8 @@ public class SSRF {
 
     private SSRFSettingsModel settingsModel;
 
-    public SSRF() {
-        settingsModel = new SSRFSettingsModel("null", "null", false);
+    public SSRF(String ceyeToken,String ceyeDnsLog,boolean activated) {
+        settingsModel = new SSRFSettingsModel(ceyeToken,ceyeDnsLog,activated);
         createUI();
     }
 

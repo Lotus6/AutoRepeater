@@ -186,11 +186,14 @@ public class AutoRepeater implements IMessageEditorController {
         baseReplacements = new Replacements();
         baseReplacementsTableModel = baseReplacements.getReplacementTableModel();
 
-        ssrfConfigReplacements = new SSRF();
+        ssrfConfigReplacements = new SSRF("null", "null", false);
+        ssrfConfigReplacements.updateUIFromModel();
 
-        redirectConfigReplacements = new Redirect();
+        redirectConfigReplacements = new Redirect("baidu.com", true);
+        redirectConfigReplacements.updateUIFromModel();
 
-        sqliConfigReplacements = new Sqli();
+        sqliConfigReplacements = new Sqli(true);
+        sqliConfigReplacements.updateUIFromModel();
 
         logManager = new LogManager();
 
@@ -201,6 +204,47 @@ public class AutoRepeater implements IMessageEditorController {
 
         highlighters = new Highlighters(logManager, logTable);
         highlighterUITableModel = highlighters.getHighlighterUITableModel();
+
+
+        List<String> ssrfDicts = Arrays.asList(
+                "url", "link", "redirect", "redirect_url", "callback", "api",
+                "endpoint", "api_url", "proxy", "proxy_url", "fetch", "download",
+                "file", "data", "src", "source", "img", "image", "uri", "path",
+                "load", "remote", "request", "fetch_url", "load_url", "get_url",
+                "open_url", "read_url", "view_url", "content_url", "service_url",
+                "webhook", "feed", "oembed_url", "metadata_url", "fileurl", "pingname", "ping", "exec"
+        );
+
+        // 初始化参数
+        for (String dict : ssrfDicts) {
+            ssrfReplacementsTableModel.addReplacement(new Replacement("Match Param Name, Replace Dnslog", dict, "null", "Replace First", "initialization", false));
+        }
+
+        List<String> redirectDicts = Arrays.asList(
+                "url", "link", "redirect", "redirect_url", "callback", "return",
+                "return_url", "return_to", "goto", "next", "location", "target",
+                "jump", "jump_to", "success_url", "error_url", "continue",
+                "continue_url", "continue_to", "continue_path", "continue_redirect",
+                "continue_link", "destination", "dest", "site", "domain", "web",
+                "to", "uri", "path", "load", "load_url"
+        );
+
+        for (String dict : redirectDicts) {
+            redirectReplacementsTableModel.addReplacement(new Replacement("Match Param Name, Replace Redirect", dict, "null", "Replace First", "initialization", false));
+        }
+
+        List<String> sqliDicts = Arrays.asList(
+                "id", "username", "password", "query", "search", "name",
+                "input", "param", "value", "data", "url", "location",
+                "order", "group", "sort", "limit", "page", "column", "field",
+                "name", "user", "role"
+        );
+        for (String dict : sqliDicts) {
+            sqliReplacementsTableModel.addReplacement(new Replacement("Match Param Name, Replace Sqli", dict, "null", "Replace First", "initialization", false));
+        }
+
+
+
         createUI();
         setDefaultState();
         activatedButton.setSelected(true);
@@ -219,6 +263,7 @@ public class AutoRepeater implements IMessageEditorController {
         if (configurationJson.get("isWhitelistFilter") != null) {
             filters.setWhitelist(configurationJson.get("isWhitelistFilter").getAsBoolean());
         }
+
         // Initialize lists
         if (configurationJson.get("baseReplacements") != null) {
             for (JsonElement element : configurationJson.getAsJsonArray("baseReplacements")) {
@@ -244,48 +289,7 @@ public class AutoRepeater implements IMessageEditorController {
             }
         }
 
-        List<String> ssrfDicts = Arrays.asList(
-                "url", "link", "redirect", "redirect_url", "callback", "api",
-                "endpoint", "api_url", "proxy", "proxy_url", "fetch", "download",
-                "file", "data", "src", "source", "img", "image", "uri", "path",
-                "load", "remote", "request", "fetch_url", "load_url", "get_url",
-                "open_url", "read_url", "view_url", "content_url", "service_url",
-                "webhook", "feed", "oembed_url", "metadata_url", "fileurl", "pingname", "ping", "exec"
-        );
 
-        if (ssrfReplacementsTableModel.getReplacements().size() == 0) {
-            for (String dict : ssrfDicts) {
-                ssrfReplacementsTableModel.addReplacement(new Replacement("Match Param Name, Replace Dnslog", dict, "null", "Which1", "initialization", false));
-            }
-        }
-
-        List<String> redirectDicts = Arrays.asList(
-                "url", "link", "redirect", "redirect_url", "callback", "return",
-                "return_url", "return_to", "goto", "next", "location", "target",
-                "jump", "jump_to", "success_url", "error_url", "continue",
-                "continue_url", "continue_to", "continue_path", "continue_redirect",
-                "continue_link", "destination", "dest", "site", "domain", "web",
-                "to", "uri", "path", "load", "load_url"
-        );
-
-        if (redirectReplacementsTableModel.getReplacements().size() == 0) {
-            for (String dict : redirectDicts) {
-                redirectReplacementsTableModel.addReplacement(new Replacement("Match Param Name, Replace Redirect", dict, "null", "Which1", "initialization", false));
-            }
-        }
-
-        List<String> sqliDicts = Arrays.asList(
-                "id", "username", "password", "query", "search", "name",
-                "input", "param", "value", "data", "url", "location",
-                "order", "group", "sort", "limit", "page", "column", "field",
-                "name", "user", "role"
-        );
-        if (sqliReplacementsTableModel.getReplacements().size() == 0) {
-            for (String dict : sqliDicts) {
-                sqliReplacementsTableModel.addReplacement(new Replacement("Match Param Name, Replace Sqli", dict, "null", "Which1", "initialization", false));
-
-            }
-        }
         if (configurationJson.get("ssrfConfig") != null) {
             for (JsonElement element : configurationJson.getAsJsonArray("ssrfConfig")) {
 
@@ -419,11 +423,23 @@ public class AutoRepeater implements IMessageEditorController {
     }
 
     public JsonObject toJson() {
-        // 循环将handler配置文件写入，并返回
         JsonObject autoRepeaterJson = new JsonObject();
+
         SSRFSettingsModel ssrfModel = ssrfConfigReplacements.getSettingsModel();
         RedirectSettingsModel redirectModel = redirectConfigReplacements.getSettingsModel();
         SqliSettingsModel sqliModel = sqliConfigReplacements.getSettingsModel();
+
+        JsonArray ssrfConfigArray = new JsonArray();
+        JsonArray redirectConfigArray = new JsonArray();
+
+        JsonObject ssrfConfigJsonObject = new JsonObject();
+        ssrfConfigJsonObject.addProperty("ceyeToken", ssrfModel.getCeyeToken());
+        ssrfConfigJsonObject.addProperty("ceyeDnsLog", ssrfModel.getCeyeDnsLog());
+        ssrfConfigArray.add(ssrfConfigJsonObject);
+
+        JsonObject redirectConfigJsonObject = new JsonObject();
+        redirectConfigJsonObject.addProperty("redirectDomain", redirectModel.getRedirectDomain());
+        redirectConfigArray.add(redirectConfigJsonObject);
 
         // Add Static Properties
         autoRepeaterJson.addProperty("isActivated", activatedButton.isSelected());
@@ -434,44 +450,38 @@ public class AutoRepeater implements IMessageEditorController {
 
         // Add Arrays
         JsonArray baseReplacementsArray = new JsonArray();
-//        JsonArray replacementsArray = new JsonArray();
         JsonArray ssrfReplacementsArray = new JsonArray();
         JsonArray redirectReplacementsArray = new JsonArray();
         JsonArray sqliReplacementsArray = new JsonArray();
+
+//        JsonArray replacementsArray = new JsonArray();
+
         JsonArray conditionsArray = new JsonArray();
         JsonArray filtersArray = new JsonArray();
         JsonArray highlightersArray = new JsonArray();
-        JsonArray ssrfConfigArray = new JsonArray();
-        JsonArray redirectConfigArray = new JsonArray();
-
-        JsonObject ssrfJsonObject = new JsonObject();
-        ssrfJsonObject.addProperty("ceyeToken", ssrfModel.getCeyeToken());
-        ssrfJsonObject.addProperty("ceyeDnsLog", ssrfModel.getCeyeDnsLog());
-        ssrfConfigArray.add(ssrfJsonObject);
-
-        JsonObject redirectJsonObject = new JsonObject();
-        redirectJsonObject.addProperty("redirectDomain", redirectModel.getRedirectDomain());
-        redirectConfigArray.add(redirectJsonObject);
-
-
         for (Condition c : conditionsTableModel.getConditions()) {
             conditionsArray.add(gson.toJsonTree(c));
         }
+
         for (Replacement r : baseReplacementsTableModel.getReplacements()) {
             baseReplacementsArray.add(gson.toJsonTree(r));
         }
-//        for (Replacement r : replacementsTableModel.getReplacements()) {
-//            replacementsArray.add(gson.toJsonTree(r));
-//        }
+
         for (Replacement r : ssrfReplacementsTableModel.getReplacements()) {
             ssrfReplacementsArray.add(gson.toJsonTree(r));
         }
+
         for (Replacement r : redirectReplacementsTableModel.getReplacements()) {
             redirectReplacementsArray.add(gson.toJsonTree(r));
         }
+
         for (Replacement r : sqliReplacementsTableModel.getReplacements()) {
             sqliReplacementsArray.add(gson.toJsonTree(r));
         }
+
+//        for (Replacement r : replacementsTableModel.getReplacements()) {
+//            replacementsArray.add(gson.toJsonTree(r));
+//        }
         for (Filter f : filterTableModel.getFilters()) {
             filtersArray.add(gson.toJsonTree(f));
         }
@@ -487,8 +497,11 @@ public class AutoRepeater implements IMessageEditorController {
             highlighterTableObject.add("highlighters", tempHighlightersArray);
             highlightersArray.add(highlighterTableObject);
         }
+
         autoRepeaterJson.add("baseReplacements", baseReplacementsArray);
+
 //        autoRepeaterJson.add("replacements", replacementsArray);
+
         autoRepeaterJson.add("conditions", conditionsArray);
         autoRepeaterJson.add("filters", filtersArray);
         autoRepeaterJson.add("highlighters", highlightersArray);
@@ -864,61 +877,23 @@ public class AutoRepeater implements IMessageEditorController {
     public void modifyAndSendRequestAndLog(
             int toolFlag,
             IHttpRequestResponse messageInfo) {
-        if (activatedButton.isSelected()
-                && toolFlag != BurpExtender.getCallbacks().TOOL_EXTENDER) {
+
+        // 基本替换功能
+        if (activatedButton.isSelected() && toolFlag != BurpExtender.getCallbacks().TOOL_EXTENDER && baseReplacementsTableModel.getReplacements().size() != 0) {
             boolean meetsConditions = conditionsTableModel.check(toolFlag, messageInfo);
             if (meetsConditions) {
                 // 创建一个集合以将每个新的唯一请求存储
                 HashSet<IHttpRequestResponse> baseRequestSet = new HashSet<>();
 
-                HashSet<IHttpRequestResponse> ssrfRequestSet = new HashSet<>();
-                HashSet<IHttpRequestResponse> redirectRequestSet = new HashSet<>();
-                HashSet<IHttpRequestResponse> sqliRequestSet = new HashSet<>();
-
                 IHttpRequestResponse baseReplacedRequestResponse =
                         Utils.cloneIHttpRequestResponse(messageInfo);
-                IExtensionHelpers helpers = BurpExtender.getHelpers();
-                IRequestInfo analyzedRequest = helpers.analyzeRequest(baseReplacedRequestResponse);
 
-
-                if (baseReplacementsTableModel.getReplacements().size() != 0) {
-                    // 对捕获的请求执行所有基本替换
-                    for (Replacement globalReplacement : baseReplacementsTableModel.getReplacements()) {
-                        baseReplacedRequestResponse.setRequest(
-                                globalReplacement.performReplacement(baseReplacedRequestResponse));
-                    }
-                    baseRequestSet.add(baseReplacedRequestResponse);
+                // 对捕获的请求执行所有基本替换
+                for (Replacement globalReplacement : baseReplacementsTableModel.getReplacements()) {
+                    baseReplacedRequestResponse.setRequest(
+                            globalReplacement.performReplacement(baseReplacedRequestResponse, null));
                 }
-
-                IHttpRequestResponse ssrfReplacedRequestResponse = Utils.cloneIHttpRequestResponse(messageInfo);
-                if (ssrfConfigReplacements.getSettingsModel().isActivated()) {
-                    // 对捕获的请求执行所有基本替换
-                    for (Replacement globalReplacement : ssrfReplacementsTableModel.getReplacements()) {
-                        ssrfReplacedRequestResponse.setRequest(
-                                globalReplacement.performReplacement(ssrfReplacedRequestResponse));
-                    }
-                    ssrfRequestSet.add(ssrfReplacedRequestResponse);
-                }
-
-
-                IHttpRequestResponse redirectReplacedRequestResponse = Utils.cloneIHttpRequestResponse(messageInfo);
-                if (redirectConfigReplacements.getSettingsModel().isActivated()) {
-
-                    for (Replacement globalReplacement : redirectReplacementsTableModel.getReplacements()) {
-                        redirectReplacedRequestResponse.setRequest(
-                                globalReplacement.performReplacement(redirectReplacedRequestResponse));
-                    }
-                    redirectRequestSet.add(redirectReplacedRequestResponse);
-                }
-
-                IHttpRequestResponse sqliReplacedRequestResponse = Utils.cloneIHttpRequestResponse(messageInfo);
-                if (sqliConfigReplacements.getSettingsModel().isActivated()) {
-                    for (Replacement globalReplacement : sqliReplacementsTableModel.getReplacements()) {
-                        sqliReplacedRequestResponse.setRequest(
-                                globalReplacement.performReplacement(sqliReplacedRequestResponse));
-                    }
-                    sqliRequestSet.add(sqliReplacedRequestResponse);
-                }
+                baseRequestSet.add(baseReplacedRequestResponse);
 
 //                // 将基本已替换请求添加到请求集中
 //                if (replacementsTableModel.getReplacements().isEmpty()) {
@@ -932,7 +907,6 @@ public class AutoRepeater implements IMessageEditorController {
 //                    newHttpRequest.setRequest(replacement.performReplacement(newHttpRequest));
 //                    requestSet.add(newHttpRequest);
 //                }
-
                 // 基本请求替换
                 for (IHttpRequestResponse request : baseRequestSet) {
                     if (!Arrays.equals(request.getRequest(), messageInfo.getRequest())) {
@@ -967,6 +941,30 @@ public class AutoRepeater implements IMessageEditorController {
                         logManager.getLogTableModel().fireTableDataChanged();
                     }
                 }
+
+            }
+        }
+
+
+        // ssrf 漏洞判断
+        if (ssrfConfigReplacements.getSettingsModel().isActivated() && toolFlag != BurpExtender.getCallbacks().TOOL_EXTENDER && ssrfReplacementsTableModel.getReplacements().size() != 0) {
+            boolean meetsConditions = conditionsTableModel.check(toolFlag, messageInfo);
+            if (meetsConditions) {
+                // 创建一个集合以将每个新的唯一请求存储
+                HashSet<IHttpRequestResponse> ssrfRequestSet = new HashSet<>();
+
+                IHttpRequestResponse baseReplacedRequestResponse =
+                        Utils.cloneIHttpRequestResponse(messageInfo);
+                IExtensionHelpers helpers = BurpExtender.getHelpers();
+                IRequestInfo analyzedRequest = helpers.analyzeRequest(baseReplacedRequestResponse);
+
+                IHttpRequestResponse ssrfReplacedRequestResponse = Utils.cloneIHttpRequestResponse(messageInfo);
+                // 对捕获的请求执行所有基本替换
+                for (Replacement globalReplacement : ssrfReplacementsTableModel.getReplacements()) {
+                    ssrfReplacedRequestResponse.setRequest(
+                            globalReplacement.performReplacement(ssrfReplacedRequestResponse, ssrfConfigReplacements.getSettingsModel().getCeyeDnsLog()));
+                }
+                ssrfRequestSet.add(ssrfReplacedRequestResponse);
 
                 // ssrf 漏洞判断
                 for (IHttpRequestResponse request : ssrfRequestSet) {
@@ -1017,10 +1015,26 @@ public class AutoRepeater implements IMessageEditorController {
                             logManager.getLogTableModel().fireTableDataChanged();
                         }
 
-
                     }
                 }
-                // 重定向漏洞判断
+            }
+
+        }
+
+
+        // 重定向漏洞判断
+        if (redirectConfigReplacements.getSettingsModel().isActivated() && toolFlag != BurpExtender.getCallbacks().TOOL_EXTENDER && redirectReplacementsTableModel.getReplacements().size() != 0) {
+            boolean meetsConditions = conditionsTableModel.check(toolFlag, messageInfo);
+            if (meetsConditions) {
+                IHttpRequestResponse redirectReplacedRequestResponse = Utils.cloneIHttpRequestResponse(messageInfo);
+                HashSet<IHttpRequestResponse> redirectRequestSet = new HashSet<>();
+
+                for (Replacement globalReplacement : redirectReplacementsTableModel.getReplacements()) {
+                    redirectReplacedRequestResponse.setRequest(
+                            globalReplacement.performReplacement(redirectReplacedRequestResponse, redirectConfigReplacements.getSettingsModel().getRedirectDomain()));
+                }
+                redirectRequestSet.add(redirectReplacedRequestResponse);
+
                 for (IHttpRequestResponse redrequest : redirectRequestSet) {
                     if (!Arrays.equals(redrequest.getRequest(), messageInfo.getRequest())) {
 
@@ -1069,7 +1083,25 @@ public class AutoRepeater implements IMessageEditorController {
                     }
                 }
 
-                // 注入判断
+            }
+        }
+
+        // 注入判断
+        if (sqliConfigReplacements.getSettingsModel().isActivated() && toolFlag != BurpExtender.getCallbacks().TOOL_EXTENDER && sqliReplacementsTableModel.getReplacements().size() != 0) {
+            boolean meetsConditions = conditionsTableModel.check(toolFlag, messageInfo);
+            if (meetsConditions) {
+                // 创建一个集合以将每个新的唯一请求存储
+                HashSet<IHttpRequestResponse> sqliRequestSet = new HashSet<>();
+
+                IHttpRequestResponse sqliReplacedRequestResponse = Utils.cloneIHttpRequestResponse(messageInfo);
+                if (sqliConfigReplacements.getSettingsModel().isActivated()) {
+                    for (Replacement globalReplacement : sqliReplacementsTableModel.getReplacements()) {
+                        sqliReplacedRequestResponse.setRequest(
+                                globalReplacement.performReplacement(sqliReplacedRequestResponse, "'"));
+                    }
+                    sqliRequestSet.add(sqliReplacedRequestResponse);
+                }
+
                 for (IHttpRequestResponse sqlirequest : sqliRequestSet) {
                     if (!Arrays.equals(sqlirequest.getRequest(), messageInfo.getRequest())) {
 
@@ -1124,6 +1156,7 @@ public class AutoRepeater implements IMessageEditorController {
 
             }
         }
+
     }
 
 
