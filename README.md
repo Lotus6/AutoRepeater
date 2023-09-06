@@ -1,17 +1,20 @@
 # AutoRepeater
-* Burp插件，自动化挖掘SSRF，Redirect，Sqli漏洞，自定义匹配参数
+* Burp插件，自动化挖掘SSRF，Redirect，Sqli漏洞，自定义匹配参数。
 * (如果感觉对您有帮助，感觉不错的话，请您给个大大的 ⭐️❗️)
 * 捡到洞欢迎分享喜悦❗️
-* Burp 版本 2020.2.1，jdk1.8 高版本还未打包
-* (等更新，修bug中～)
+* 有更好的判断规则，可以提交issue。
+* 其他SRC常用漏洞思路，也可提交，扩展进去。
+* 打包了jdk1.8和jdk18版本。
 
 
 
 **V1.0**
 
 1. 效果图
-
+* 低版本burp
 ![iShot_2023-09-02_17 03 04](https://github.com/Lotus6/AutoRepeater/assets/63742814/6a806fe8-2c8f-4233-a60e-9d9909e66425)
+* 高版本burp
+<img width="1318" alt="image" src="https://github.com/Lotus6/AutoRepeater/assets/63742814/76a22d76-a06b-403c-802c-c3125691d164">
 
 
 2. Config配置
