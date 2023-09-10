@@ -6,6 +6,14 @@
 * 其他SRC常用漏洞思路，也可提交，扩展进去。
 * 打包了jdk1.8和jdk18版本。
 
+**V1.1**
+* 添加了请求包相应包匹配选项（基于原请求响应，只有文本正则匹配，不占资源）
+  ![iShot_2023-09-10_18 34 22](https://github.com/Lotus6/AutoRepeater/assets/63742814/52373def-d4a3-4946-addf-4e7e0cbbe163)
+
+* 内置了未授权，shiro，ak，swagger，建议开两个窗口，一个用来匹配敏感信息，一个用来检测漏洞。
+* 未授权默认未勾选，用法，进入后台后，勾选上，接口点一遍，会自动删除Cookie，看下方的 Modified 有无正常响应，即可迅速找到未授权接口，页面等。
+* Bug. Type.输出的为添加时的comment，方便定位什么敏感信息。
+  ![iShot_2023-09-10_18 35 44](https://github.com/Lotus6/AutoRepeater/assets/63742814/2a634410-beff-49d5-bf09-a4f749aca19d)
 
 
 **V1.0**
